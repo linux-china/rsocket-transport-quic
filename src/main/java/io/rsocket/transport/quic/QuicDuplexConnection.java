@@ -70,8 +70,8 @@ public class QuicDuplexConnection implements DuplexConnection {
 
     @Override
     public Flux<ByteBuf> receive() {
-        final NettyInbound inbound = connection.inbound();
-        return inbound.receive().map(FrameLengthCodec::frame);
+        //todo ReactorNetty.unavailableInbound(this);
+        return connection.inbound().receive().map(FrameLengthCodec::frame);
     }
 
     @Override
