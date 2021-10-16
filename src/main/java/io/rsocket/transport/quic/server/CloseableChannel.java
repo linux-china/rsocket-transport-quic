@@ -1,6 +1,8 @@
 package io.rsocket.transport.quic.server;
 
 import io.rsocket.Closeable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 import reactor.netty.DisposableChannel;
 
@@ -13,7 +15,7 @@ import java.util.Objects;
  * close-ability and exposing the {@link DisposableChannel}'s address.
  */
 public final class CloseableChannel implements Closeable {
-
+    private static Logger log = LoggerFactory.getLogger(CloseableChannel.class);
     /**
      * For 1.0 and 1.1 compatibility: remove when RSocket requires Reactor Netty 1.0+.
      */
@@ -59,11 +61,13 @@ public final class CloseableChannel implements Closeable {
 
     @Override
     public void dispose() {
+        log.info("channel disposed");
         channel.dispose();
     }
 
     @Override
     public boolean isDisposed() {
+        log.info("isDisposed: " + channel.isDisposed());
         return channel.isDisposed();
     }
 
