@@ -3,12 +3,12 @@ package io.rsocket.transport.quic.client;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.incubator.codec.quic.QuicSslContext;
 import io.netty.incubator.codec.quic.QuicSslContextBuilder;
+import io.netty.incubator.codec.quic.QuicStreamType;
 import io.rsocket.DuplexConnection;
 import io.rsocket.transport.ClientTransport;
-import io.rsocket.transport.quic.QuicDuplexConnection;
-import io.rsocket.transport.quic.RSocketLengthCodec;
 import reactor.core.publisher.Mono;
 import reactor.netty.incubator.quic.QuicClient;
+import reactor.netty.incubator.quic.QuicConnection;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -45,14 +45,23 @@ public class QuicClientTransport implements ClientTransport {
 
     @Override
     public Mono<DuplexConnection> connect() {
-        return client.streamObserve((conn, state) -> {
-                    System.out.println("stream observer");
+        final QuicConnection quicConnection = client.streamObserve((conn, state) -> {
                     if (state == CONNECTED) {
-                        conn.addHandlerLast(new RSocketLengthCodec(maxFrameLength));
+                        System.out.println("connected with " + conn.getClass().getCanonicalName());
+                        //conn.addHandlerLast(new RSocketLengthCodec(maxFrameLength));
                     }
                 })
-                .connect()
-                .map(QuicDuplexConnection::new);
+                .connectNow();
+        final QuicDuplexConnection duplexConnection = new QuicDuplexConnection();
+        quicConnection.createStream(QuicStreamType.BIDIRECTIONAL, (quicInbound, quicOutbound) -> {
+            quicInbound.withConnection(connection -> {
+                duplexConnection.setConnection(connection);
+                duplexConnection.setInbound(quicInbound);
+                duplexConnection.setOutbound(quicOutbound);
+            });
+            return quicOutbound;
+        }).block();
+        return Mono.just(duplexConnection);
     }
 
     static QuicClient createClient(Supplier<SocketAddress> remoteAddress) {
@@ -65,7 +74,7 @@ public class QuicClientTransport implements ClientTransport {
                 .bindAddress(() -> new InetSocketAddress(0))
                 .wiretap(false)
                 .secure(clientCtx)
-                .idleTimeout(Duration.ofSeconds(5))
+                .idleTimeout(Duration.ofSeconds(50))
                 .initialSettings(spec -> {
                     spec.maxData(10000000)
                             .maxStreamDataBidirectionalLocal(1000000)
