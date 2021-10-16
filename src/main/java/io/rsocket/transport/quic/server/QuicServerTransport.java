@@ -38,7 +38,7 @@ public class QuicServerTransport implements ServerTransport<Closeable> {
         Objects.requireNonNull(acceptor, "acceptor must not be null");
         QuicSslContext serverCtx = sslContext();
         final QuicServer quicServer = QuicServer.create()
-                .host("127.0.0.1")
+                .host("0.0.0.0")
                 .port(this.port)
                 .secure(serverCtx)
                 .tokenHandler(InsecureQuicTokenHandler.INSTANCE)
