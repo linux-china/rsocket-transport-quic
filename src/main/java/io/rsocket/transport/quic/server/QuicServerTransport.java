@@ -15,6 +15,7 @@ import java.time.Duration;
 import java.util.Objects;
 
 import static io.rsocket.frame.FrameLengthCodec.FRAME_LENGTH_MASK;
+import static reactor.netty.ConnectionObserver.State.CONNECTED;
 
 /**
  * QUIC server transport
@@ -36,26 +37,17 @@ public class QuicServerTransport implements ServerTransport<Closeable> {
     @Override
     public Mono<Closeable> start(ConnectionAcceptor acceptor) {
         Objects.requireNonNull(acceptor, "acceptor must not be null");
-        final QuicServer quicServer = QuicServer.create()
-                .host("0.0.0.0")
-                .port(this.port)
-                .secure(quicSslContext())
-                .tokenHandler(InsecureQuicTokenHandler.INSTANCE)
-                .wiretap(false)
-                .idleTimeout(Duration.ofSeconds(5))
-                .initialSettings(spec ->
-                        spec.maxData(10000000)
-                                .maxStreamDataBidirectionalRemote(1000000)
-                                .maxStreamsBidirectional(100));
-
+        final QuicServer quicServer = createServer();
         return quicServer
-                .doOnConnection(
-                        c -> {
-                            c.addHandlerLast(new RSocketLengthCodec(maxFrameLength));
-                            acceptor.apply(new QuicDuplexConnection(c))
-                                    .then(Mono.<Void>never())
-                                    .subscribe(c.disposeSubscriber());
-                        })
+                .streamObserve((connection, state) -> {
+                    System.out.println("======connected");
+                    if (state == CONNECTED) {
+                        connection.addHandlerLast(new RSocketLengthCodec(maxFrameLength));
+                        acceptor.apply(new QuicDuplexConnection(connection))
+                                .then(Mono.<Void>never())
+                                .subscribe(connection.disposeSubscriber());
+                    }
+                })
                 .bind()
                 .map(CloseableChannel::new);
     }
@@ -70,5 +62,23 @@ public class QuicServerTransport implements ServerTransport<Closeable> {
             e.printStackTrace();
             return null;
         }
+    }
+
+    private QuicServer createServer() {
+        return QuicServer.create()
+                .tokenHandler(InsecureQuicTokenHandler.INSTANCE)
+                .host("0.0.0.0")
+                .port(port)
+                .wiretap(false)
+                .secure(quicSslContext())
+                .idleTimeout(Duration.ofSeconds(5))
+                .initialSettings(spec -> {
+                    spec.maxData(10000000)
+                            .maxStreamDataBidirectionalLocal(1000000)
+                            .maxStreamDataBidirectionalRemote(1000000)
+                            .maxStreamDataUnidirectional(1000000)
+                            .maxStreamsBidirectional(100)
+                            .maxStreamsUnidirectional(100);
+                });
     }
 }
