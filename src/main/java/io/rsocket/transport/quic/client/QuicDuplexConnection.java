@@ -22,9 +22,12 @@ import java.net.SocketAddress;
  */
 public class QuicDuplexConnection implements DuplexConnection {
     protected Sinks.Empty<Void> onClose = Sinks.empty();
-    private final Connection connection;
+    private  Connection connection;
     private NettyInbound inbound;
     private NettyOutbound outbound;
+
+    public QuicDuplexConnection() {
+    }
 
     /**
      * Creates a new instance
@@ -41,6 +44,18 @@ public class QuicDuplexConnection implements DuplexConnection {
                         future -> {
                             if (!isDisposed()) dispose();
                         });
+    }
+
+    public void setConnection(Connection connection) {
+        this.connection = connection;
+    }
+
+    public void setInbound(NettyInbound inbound) {
+        this.inbound = inbound;
+    }
+
+    public void setOutbound(NettyOutbound outbound) {
+        this.outbound = outbound;
     }
 
     @Override
