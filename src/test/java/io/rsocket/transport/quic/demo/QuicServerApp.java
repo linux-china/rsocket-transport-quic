@@ -21,7 +21,7 @@ public class QuicServerApp {
         Connection server =
                 QuicServer.create()
                         .host("127.0.0.1")
-                        .port(8080)
+                        .port(7878)
                         .secure(serverCtx)
                         .tokenHandler(InsecureQuicTokenHandler.INSTANCE)
                         .wiretap(false)

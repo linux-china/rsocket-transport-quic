@@ -23,7 +23,7 @@ public class QuicClientApp {
 		QuicConnection client =
 				QuicClient.create()
 				          .bindAddress(() -> new InetSocketAddress(0))
-				          .remoteAddress(() -> new InetSocketAddress("127.0.0.1", 8080))
+				          .remoteAddress(() -> new InetSocketAddress("127.0.0.1", 7878))
 				          .secure(clientCtx)
 				          .wiretap(false)
 				          .idleTimeout(Duration.ofSeconds(5))
