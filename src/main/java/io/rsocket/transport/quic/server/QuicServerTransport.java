@@ -6,6 +6,7 @@ import io.netty.incubator.codec.quic.QuicSslContext;
 import io.netty.incubator.codec.quic.QuicSslContextBuilder;
 import io.rsocket.Closeable;
 import io.rsocket.transport.ServerTransport;
+import io.rsocket.transport.quic.QuicDuplexConnection;
 import io.rsocket.transport.quic.RSocketLengthCodec;
 import reactor.core.publisher.Mono;
 import reactor.netty.incubator.quic.QuicServer;
@@ -51,7 +52,7 @@ public class QuicServerTransport implements ServerTransport<Closeable> {
                 .doOnConnection(
                         c -> {
                             c.addHandlerLast(new RSocketLengthCodec(maxFrameLength));
-                            acceptor.apply(new QuicDuplexServerConnection(c))
+                            acceptor.apply(new QuicDuplexConnection(c))
                                     .then(Mono.<Void>never())
                                     .subscribe(c.disposeSubscriber());
                         })

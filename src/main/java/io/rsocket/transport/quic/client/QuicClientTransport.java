@@ -5,6 +5,7 @@ import io.netty.incubator.codec.quic.QuicSslContext;
 import io.netty.incubator.codec.quic.QuicSslContextBuilder;
 import io.rsocket.DuplexConnection;
 import io.rsocket.transport.ClientTransport;
+import io.rsocket.transport.quic.QuicDuplexConnection;
 import io.rsocket.transport.quic.RSocketLengthCodec;
 import reactor.core.publisher.Mono;
 import reactor.netty.incubator.quic.QuicClient;
@@ -53,6 +54,6 @@ public class QuicClientTransport implements ClientTransport {
                 .initialSettings(spec -> spec.maxData(10000000).maxStreamDataBidirectionalLocal(1000000))
                 .doOnConnected(c -> c.addHandlerLast(new RSocketLengthCodec(maxFrameLength)))
                 .connect()
-                .map(QuicDuplexClientConnection::new);
+                .map(QuicDuplexConnection::new);
     }
 }
