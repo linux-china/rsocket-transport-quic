@@ -10,7 +10,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 import reactor.netty.Connection;
-import reactor.netty.NettyInbound;
 
 import java.net.SocketAddress;
 
@@ -70,7 +69,6 @@ public class QuicDuplexConnection implements DuplexConnection {
 
     @Override
     public Flux<ByteBuf> receive() {
-        //todo ReactorNetty.unavailableInbound(this);
         return connection.inbound().receive().map(FrameLengthCodec::frame);
     }
 
