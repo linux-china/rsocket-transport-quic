@@ -1,4 +1,4 @@
-package io.rsocket.transport.quic;
+package io.rsocket.transport.quic.client;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -10,6 +10,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 import reactor.netty.Connection;
+import reactor.netty.NettyInbound;
+import reactor.netty.NettyOutbound;
 
 import java.net.SocketAddress;
 
@@ -21,13 +23,17 @@ import java.net.SocketAddress;
 public class QuicDuplexConnection implements DuplexConnection {
     protected Sinks.Empty<Void> onClose = Sinks.empty();
     private final Connection connection;
+    private NettyInbound inbound;
+    private NettyOutbound outbound;
 
     /**
      * Creates a new instance
      */
-    public QuicDuplexConnection(Connection connection) {
-        super();
+    public QuicDuplexConnection(Connection connection, NettyInbound inbound, NettyOutbound outbound) {
+        System.out.println("client connection created and base on : " + connection.getClass().getCanonicalName());
         this.connection = connection;
+        this.inbound = inbound;
+        this.outbound = outbound;
         this.connection
                 .channel()
                 .closeFuture()
@@ -69,12 +75,14 @@ public class QuicDuplexConnection implements DuplexConnection {
 
     @Override
     public Flux<ByteBuf> receive() {
-        return connection.inbound().receive().map(FrameLengthCodec::frame);
+        System.out.println("Begin to receive buffers from server!");
+        return inbound.receive().map(FrameLengthCodec::frame);
     }
 
     @Override
     public void sendFrame(int streamId, ByteBuf frame) {
-        connection.outbound().send(Mono.just(FrameLengthCodec.encode(alloc(), frame.readableBytes(), frame)));
+        System.out.println("Begin to send buffers to server!");
+        outbound.send(Mono.just(FrameLengthCodec.encode(alloc(), frame.readableBytes(), frame)));
     }
 
     @Override
