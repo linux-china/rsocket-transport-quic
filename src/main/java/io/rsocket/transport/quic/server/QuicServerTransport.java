@@ -36,11 +36,10 @@ public class QuicServerTransport implements ServerTransport<Closeable> {
     @Override
     public Mono<Closeable> start(ConnectionAcceptor acceptor) {
         Objects.requireNonNull(acceptor, "acceptor must not be null");
-        QuicSslContext serverCtx = sslContext();
         final QuicServer quicServer = QuicServer.create()
                 .host("0.0.0.0")
                 .port(this.port)
-                .secure(serverCtx)
+                .secure(quicSslContext())
                 .tokenHandler(InsecureQuicTokenHandler.INSTANCE)
                 .wiretap(false)
                 .idleTimeout(Duration.ofSeconds(5))
@@ -61,7 +60,7 @@ public class QuicServerTransport implements ServerTransport<Closeable> {
                 .map(CloseableChannel::new);
     }
 
-    private QuicSslContext sslContext() {
+    private QuicSslContext quicSslContext() {
         try {
             SelfSignedCertificate ssc = new SelfSignedCertificate();
             return QuicSslContextBuilder.forServer(ssc.privateKey(), null, ssc.certificate())
