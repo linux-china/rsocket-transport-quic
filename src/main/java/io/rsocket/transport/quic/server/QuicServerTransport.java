@@ -6,7 +6,8 @@ import io.netty.incubator.codec.quic.QuicSslContext;
 import io.netty.incubator.codec.quic.QuicSslContextBuilder;
 import io.rsocket.Closeable;
 import io.rsocket.transport.ServerTransport;
-import io.rsocket.transport.quic.RSocketLengthCodec;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 import reactor.netty.incubator.quic.QuicServer;
 
@@ -14,7 +15,6 @@ import java.time.Duration;
 import java.util.Objects;
 
 import static io.rsocket.frame.FrameLengthCodec.FRAME_LENGTH_MASK;
-import static reactor.netty.ConnectionObserver.State.CONNECTED;
 
 /**
  * QUIC server transport
@@ -22,6 +22,7 @@ import static reactor.netty.ConnectionObserver.State.CONNECTED;
  * @author linux_china
  */
 public class QuicServerTransport implements ServerTransport<Closeable> {
+    private static Logger log = LoggerFactory.getLogger(QuicServerTransport.class);
     private final int port;
     private final int maxFrameLength = FRAME_LENGTH_MASK;
 
@@ -38,14 +39,11 @@ public class QuicServerTransport implements ServerTransport<Closeable> {
         Objects.requireNonNull(acceptor, "acceptor must not be null");
         final QuicServer quicServer = createServer();
         return quicServer
-                .streamObserve((connection, state) -> {
-                    if (state == CONNECTED) {
-                        System.out.println("============= connected");
-                        connection.addHandlerLast(new RSocketLengthCodec(maxFrameLength));
-                        acceptor.apply(new QuicServerDuplexConnection(connection))
-                                .then(Mono.<Void>never())
-                                .subscribe(connection.disposeSubscriber());
-                    }
+                .handleStream((inbound, outbound) -> {
+                    acceptor.apply(new QuicServerDuplexConnection(inbound, outbound))
+                            .subscribe();
+                    log.info("acceptor initialized");
+                    return outbound;
                 })
                 .bind()
                 .map(CloseableChannel::new);
@@ -70,7 +68,7 @@ public class QuicServerTransport implements ServerTransport<Closeable> {
                 .port(port)
                 .wiretap(false)
                 .secure(quicSslContext())
-                .idleTimeout(Duration.ofSeconds(5))
+                .idleTimeout(Duration.ofSeconds(50))
                 .initialSettings(spec -> {
                     spec.maxData(10000000)
                             .maxStreamDataBidirectionalLocal(1000000)

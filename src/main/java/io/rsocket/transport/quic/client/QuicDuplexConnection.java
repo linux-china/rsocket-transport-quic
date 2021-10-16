@@ -6,6 +6,8 @@ import io.rsocket.DuplexConnection;
 import io.rsocket.RSocketErrorException;
 import io.rsocket.frame.ErrorFrameCodec;
 import io.rsocket.frame.FrameLengthCodec;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
@@ -21,6 +23,7 @@ import java.net.SocketAddress;
  * @author linux_china
  */
 public class QuicDuplexConnection implements DuplexConnection {
+    private static Logger log = LoggerFactory.getLogger(QuicDuplexConnection.class);
     protected Sinks.Empty<Void> onClose = Sinks.empty();
     private  Connection connection;
     private NettyInbound inbound;
@@ -33,7 +36,7 @@ public class QuicDuplexConnection implements DuplexConnection {
      * Creates a new instance
      */
     public QuicDuplexConnection(Connection connection, NettyInbound inbound, NettyOutbound outbound) {
-        System.out.println("client connection created and base on : " + connection.getClass().getCanonicalName());
+        log.info("client connection created and base on : " + connection.getClass().getCanonicalName());
         this.connection = connection;
         this.inbound = inbound;
         this.outbound = outbound;
@@ -90,13 +93,13 @@ public class QuicDuplexConnection implements DuplexConnection {
 
     @Override
     public Flux<ByteBuf> receive() {
-        System.out.println("Begin to receive buffers from server!");
+        log.info("Begin to receive buffers from server!");
         return inbound.receive().map(FrameLengthCodec::frame);
     }
 
     @Override
     public void sendFrame(int streamId, ByteBuf frame) {
-        System.out.println("Begin to send buffers to server!");
+        log.info("Begin to send buffers to server!");
         outbound.send(Mono.just(FrameLengthCodec.encode(alloc(), frame.readableBytes(), frame)));
     }
 

@@ -6,6 +6,8 @@ import io.netty.incubator.codec.quic.QuicSslContextBuilder;
 import io.netty.incubator.codec.quic.QuicStreamType;
 import io.rsocket.DuplexConnection;
 import io.rsocket.transport.ClientTransport;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 import reactor.netty.incubator.quic.QuicClient;
 import reactor.netty.incubator.quic.QuicConnection;
@@ -25,6 +27,7 @@ import static reactor.netty.ConnectionObserver.State.CONNECTED;
  * @author linux_china
  */
 public class QuicClientTransport implements ClientTransport {
+    private static Logger log = LoggerFactory.getLogger(QuicClientTransport.class);
     private final QuicClient client;
     private final int maxFrameLength = FRAME_LENGTH_MASK;
 
@@ -47,7 +50,7 @@ public class QuicClientTransport implements ClientTransport {
     public Mono<DuplexConnection> connect() {
         final QuicConnection quicConnection = client.streamObserve((conn, state) -> {
                     if (state == CONNECTED) {
-                        System.out.println("connected with " + conn.getClass().getCanonicalName());
+                        log.info("connected with " + conn.getClass().getCanonicalName());
                         //conn.addHandlerLast(new RSocketLengthCodec(maxFrameLength));
                     }
                 })

@@ -6,10 +6,11 @@ import io.rsocket.DuplexConnection;
 import io.rsocket.RSocketErrorException;
 import io.rsocket.frame.ErrorFrameCodec;
 import io.rsocket.frame.FrameLengthCodec;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
-import reactor.netty.Connection;
 import reactor.netty.incubator.quic.QuicInbound;
 import reactor.netty.incubator.quic.QuicOutbound;
 
@@ -21,42 +22,37 @@ import java.net.SocketAddress;
  * @author linux_china
  */
 public class QuicServerDuplexConnection implements DuplexConnection {
+    private static Logger log = LoggerFactory.getLogger(QuicServerDuplexConnection.class);
     protected Sinks.Empty<Void> onClose = Sinks.empty();
-    private final Connection connection;
+    //    private final Connection connection;
     private QuicInbound inbound;
     private QuicOutbound outbound;
 
     /**
      * Creates a new instance
      */
-    public QuicServerDuplexConnection(Connection connection) {
-        this.connection = connection;
-        this.inbound = (QuicInbound) connection.inbound();
-        this.outbound = (QuicOutbound) connection.outbound();
-        this.connection
-                .channel()
-                .closeFuture()
-                .addListener(
-                        future -> {
-                            if (!isDisposed()) dispose();
-                        });
+    public QuicServerDuplexConnection(QuicInbound inbound, QuicOutbound outbound) {
+        log.info("server connection created: " + inbound.getClass().getCanonicalName());
+        this.inbound = inbound;
+        this.outbound = outbound;
     }
 
     @Override
     public ByteBufAllocator alloc() {
-        return connection.channel().alloc();
+        return outbound.alloc();
     }
 
     @Override
     public SocketAddress remoteAddress() {
-        return connection.channel().remoteAddress();
+        //return connection.channel().remoteAddress();
+        return null;
     }
 
 
     @Override
     public void sendErrorAndClose(RSocketErrorException e) {
         final ByteBuf errorFrame = ErrorFrameCodec.encode(alloc(), 0, e);
-        connection.outbound()
+        outbound
                 .sendObject(FrameLengthCodec.encode(alloc(), errorFrame.readableBytes(), errorFrame))
                 .then()
                 .subscribe(
@@ -74,7 +70,7 @@ public class QuicServerDuplexConnection implements DuplexConnection {
 
     @Override
     public Flux<ByteBuf> receive() {
-        System.out.println("Begin to receive buffers from client!");
+        log.info("Begin to receive buffers from client!");
         return inbound.receive().map(FrameLengthCodec::frame);
     }
 
@@ -90,7 +86,7 @@ public class QuicServerDuplexConnection implements DuplexConnection {
 
     @Override
     public void dispose() {
-        connection.dispose();
+        //connection.dispose();
         onClose.tryEmitEmpty();
     }
 }
