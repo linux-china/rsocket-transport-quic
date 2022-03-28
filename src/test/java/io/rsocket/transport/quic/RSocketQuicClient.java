@@ -11,7 +11,6 @@ import java.util.Objects;
 
 public class RSocketQuicClient {
     public static void main(String[] args) throws Exception {
-        Hooks.onErrorDropped(Throwable::printStackTrace);
         RSocket clientRSocket = RSocketConnector.create()
                 .connect(QuicClientTransport.create("127.0.0.1", 7878))
                 //.connect(TcpClientTransport.create("127.0.0.1", 7878))
